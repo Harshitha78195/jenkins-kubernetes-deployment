@@ -15,8 +15,20 @@ pipeline {
       }
     }
 
-    stage('Build image') {
-      steps{
+    stage('Install Dependencies') {
+      steps {
+        sh 'npm install' // Install necessary node packages for your React app
+      }
+    }
+
+    stage('Build React App') {
+      steps {
+        sh 'npm run build' // Build the React application
+      }
+    }
+
+    stage('Build Docker Image') {
+      steps {
         script {
           dockerImage = docker.build dockerimagename
         }
@@ -25,21 +37,22 @@ pipeline {
 
     stage('Pushing Image') {
       environment {
-               registryCredential = 'dockerhub-credentials'
-           }
-      steps{
+        registryCredential = 'dockerhub-credentials'
+      }
+      steps {
         script {
-          docker.withRegistry( 'https://registry.hub.docker.com', registryCredential ) {
+          docker.withRegistry('https://registry.hub.docker.com', registryCredential) {
             dockerImage.push("latest")
           }
         }
       }
     }
 
-    stage('Deploying React.js container to Kubernetes') {
+    stage('Deploy to Kubernetes') {
       steps {
         script {
-          kubernetesDeploy(configs: "deployment.yaml", "service.yaml")
+          sh 'kubectl apply -f deployment.yaml' // Apply the deployment configuration
+          sh 'kubectl apply -f service.yaml'    // Apply the service configuration
         }
       }
     }
